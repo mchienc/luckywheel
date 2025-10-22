@@ -55,19 +55,29 @@
                 required: true,
                 maxlength: 190
             },
+            "reward": {
+                required: true
+            },
             "rate": {
                 required: true,
-                number: true
+                number: true,
+                min: 0,
+                max: 100
             }
         },
         messages: {
-            "code": {
-                required: "Trường này là bắt buộc",
-                maxlength: "Giới hạn 190 ký tự"
+            "name": {
+                required: "Vui lòng nhập tên phần thưởng",
+                maxlength: "Tên không được quá 190 ký tự"
+            },
+            "reward": {
+                required: "Vui lòng nhập giải thưởng"
             },
             "rate": {
-                required: "Trường này là bắt buộc",
-                number: "Chỉ được nhập số"
+                required: "Vui lòng nhập tỷ lệ",
+                number: "Tỷ lệ phải là số",
+                min: "Tỷ lệ tối thiểu là 0",
+                max: "Tỷ lệ tối đa là 100"
             }
         }
     });

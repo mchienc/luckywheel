@@ -25,23 +25,32 @@ class ManagerSpinRepository
     public function create($request)
     {
         $count = ManagerSpin::count();
-        if ($count < 15) {
-            $spin = new ManagerSpin();
-            $spin->name = $request->name;
-            $spin->reward = str_replace(',','', $request->reward);
-            $spin->rate = $request->rate;
-            $spin->status = $request->status;
-            $spin->save();
-
+        if ($count >= 15) {
             return response()->json([
-                'success' => true,
-                'msg' => __('Add successfully')
+                'success' => false,
+                'msg' => 'Đã đạt giới hạn 15 phần thưởng'
             ]);
         }
 
+        // Kiểm tra tổng tỷ lệ không vượt quá 100%
+        $currentTotal = ManagerSpin::sum('rate');
+        if ($currentTotal + $request->rate > 100) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'Tổng tỷ lệ trúng không được vượt quá 100%'
+            ]);
+        }
+
+        $spin = new ManagerSpin();
+        $spin->name = $request->name;
+        $spin->reward = str_replace(',','', $request->reward);
+        $spin->rate = $request->rate;
+        $spin->status = $request->status;
+        $spin->save();
+
         return response()->json([
-            'success' => false,
-            'msg' => __('Maximun data')
+            'success' => true,
+            'msg' => 'Thêm phần thưởng thành công'
         ]);
     }
 
