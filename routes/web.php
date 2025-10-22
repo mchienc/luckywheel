@@ -15,8 +15,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::resource('manager-spins', ManagerSpinController::class);
+// Admin routes
+Route::middleware(['auth', 'is_admin'])->group(function () {
+    Route::resource('manager-spins', ManagerSpinController::class);
+    Route::resource('statistics', App\Http\Controllers\StatisticController::class);
+});
 
+    Route::resource('statistics', App\Http\Controllers\StatisticsController::class)->middleware('auth');
+
+    Route::get('/',[SpinController::class,'index'])->name('spin')->middleware('auth');
 Route::post('/post-spin',[SpinController::class,'postSpin'])->name('post.spin');
-Route::get('/',[SpinController::class,'index'])->name('spin');
 // Route::resource('spin', SpinController::class);
+
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

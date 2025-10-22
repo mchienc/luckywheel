@@ -157,7 +157,54 @@
             </div><!-- /.container-fluid -->
         </section>
     </div>
-<!-- /.login-box -->
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url('/') }}">
+            <b>Lucky</b>Wheel
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                @auth
+                    <li class="nav-item">
+                        <span class="nav-link">Xin chào, {{ Auth::user()->name }}</span>
+                    </li>
+                    @if(Auth::user()->isAdmin())
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('statistics.index') }}">
+                            <i class="fas fa-chart-bar"></i> Thống kê
+                        </a>
+                    </li>
+                    @endif
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('logout') }}"
+                            onclick="event.preventDefault();
+                            document.getElementById('logout-form').submit();">
+                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                        </a>
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                            @csrf
+                        </form>
+                    </li>
+                @else
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('login') }}">
+                            <i class="fas fa-sign-in-alt"></i> Đăng nhập
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('register') }}">
+                            <i class="fas fa-user-plus"></i> Đăng ký
+                        </a>
+                    </li>
+                @endauth
+            </ul>
+        </div>
+    </div>
+</nav>
 
 <!-- jQuery -->
 <script src="{{ asset('AdminLTE-3.1.0/plugins/jquery/jquery.min.js') }}"></script>
@@ -180,136 +227,109 @@
 <script src="{{ asset('AdminLTE-3.1.0/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
 <!-- Toastr -->
 <script src="{{ asset('AdminLTE-3.1.0/plugins/toastr/toastr.min.js')}}"></script>
-<script src="{{ asset('js/spin.js') }}"></script>
+<!-- Canvas Confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<!-- Lucky Wheel -->
+<script src="{{ asset('js/lucky-wheel.js') }}"></script>
 <script>
-     $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
+    $(document).ready(function() {
+        // Initialize Lucky Wheel with proper configuration
+        const wheel = new LuckyWheel({
+            wheelId: 'spin',
+            buttonId: 'btnSpin',
+            rouletteAudioPath: "{{ asset('audio/roulette.mp3') }}",
+            winAudioPath: "{{ asset('audio/congratulation.mp3') }}",
+            spinEndpoint: "{{ route('post.spin') }}"
+        });
 
-     $('input[name="date"]').daterangepicker({
-        locale: {
-            format: 'DD/MM/YYYY'
-        },
-    });
-
-    $(document).on('change', '#date', function(){
-        spin_history_table.ajax.reload();
-    })
-
-    var debounceTripDetail = null;
-    $('#search-btn').on('input', function(){
-        clearTimeout(debounceTripDetail);
-        debounceTripDetail = setTimeout(() => {
-            spin_history_table.search($(this).val()).draw();
-        }, 500);
-    });
-    var spin_history_table =$('#spin_history_table').DataTable({
-        "destroy": true,
-        "lengthChange": false,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "pageLength": 10,
-        aaSorting: [
-            [0, 'desc']
-        ],
-        "pagingType": "full_numbers",
-        "language": {
-            "info": "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
-            "infoEmpty": "Hiển thị 0 đến 0 của 0 mục",
-            "infoFiltered": '',
-            "infoPostFix": "",
-            "thousands": ",",
-            "lengthMenu": "Hiển thị _MENU_ mục",
-            "loadingRecords": "Đang tải...",
-            "processing": "Đang xử lý...",
-            "emptyTable": "Không có dữ liệu",
-            "zeroRecords": "Không tìm thấy kết quả",
-            "search": "Tìm kiếm",
-            "paginate": {
-                'first': '<i class="fa fa-angle-double-left"></i>',
-                'previous': '<i class="fa fa-angle-left" ></i>',
-                'next': '<i class="fa fa-angle-right" ></i>',
-                'last': '<i class="fa fa-angle-double-right"></i>'
+        // Date range picker
+        $('input[name="date"]').daterangepicker({
+            locale: {
+                format: 'DD/MM/YYYY'
             },
-        },
-        ajax: {
-            url: "{{ route('spin') }}",
-            data: function(d) {
-                var start = '';
-                var end = '';
-                if ($('#date').val()) {
-                    start = $('#date')
-                        .data('daterangepicker')
-                        .startDate.format('YYYY-MM-DD');
-                    end = $('#date')
-                        .data('daterangepicker')
-                        .endDate.format('YYYY-MM-DD');
-                }
-                d.start_date = start;
-                d.end_date = end;
-            }
-        },
-        order: [],
-        "columns":[
-            {"data": "reward" },
-            {"data": "created_at", class: 'text-center' },
-        ]
-    });
+        });
 
-    $("#btnSpin").click(function() {
-        StartSpin();
-    });
+        $(document).on('change', '#date', function(){
+            spin_history_table.ajax.reload();
+        });
 
-    var quayCount = $(".wheelText").length;
-    var vp = 360 / quayCount;
+        // Search handling
+        var debounceTripDetail = null;
+        $('#search-btn').on('input', function(){
+            clearTimeout(debounceTripDetail);
+            debounceTripDetail = setTimeout(() => {
+                spin_history_table.search($(this).val()).draw();
+            }, 500);
+        });
 
-    function StartSpin() {
-        $('#btnSpin').html('<i class="fa fa-spinner fa-spin"></i> Chờ kết quả...').prop('disabled',true);
-        $.ajax({
-            url: "{{ route('post.spin') }}",
-            method: "POST",
-            dataType: 'json',
-            success: function(response) {
-                if (response.status == 'error') {
-                    toastr.error(response.msg);
-                    $('#btnSpin').html('<i class="fas fa-play mr-1"></i>QUAY NGAY').prop('disabled', false);
-                    return false;
-                }
-                var audio = new Audio("{{ asset('audio/roulette.mp3') }}");
-                var audio1 = new Audio("{{ asset('audio/congratulation.mp3') }}");
-                var out = response.location;
-                var countLoop = 0;
-                var x = 0;
-                var loop = setInterval(() => {
-                    audio.play();
-                    document.getElementById("spin").style.transform = "rotate(" + (360 - x) + "deg)";
-                    if (x >= vp * out - vp / 2 && countLoop == 2) {
-                        clearInterval(loop);
-                        quayStatus = true;
-                        audio.pause();
-                        audio1.play();
-                        confetti();
-                        toastr.success(response.msg);
-                        setTimeout(() => {
-                            $('#btnSpin').html('<i class="fas fa-play mr-1"></i>QUAY NGAY').prop('disabled', false);
-                            spin_history_table.ajax.reload();
-                        }, 4000);
-                    } else {
-                        if (x >= 360) {
-                            countLoop = countLoop + 1;
-                            x = 0;
-                        }
+        // Initialize DataTable
+        var spin_history_table = $('#spin_history_table').DataTable({
+            "destroy": true,
+            "lengthChange": false,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "pageLength": 10,
+            aaSorting: [
+                [0, 'desc']
+            ],
+            "pagingType": "full_numbers",
+            "language": {
+                "info": "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                "infoEmpty": "Hiển thị 0 đến 0 của 0 mục",
+                "infoFiltered": '',
+                "infoPostFix": "",
+                "thousands": ",",
+                "lengthMenu": "Hiển thị _MENU_ mục",
+                "loadingRecords": "Đang tải...",
+                "processing": "Đang xử lý...",
+                "emptyTable": "Không có dữ liệu",
+                "zeroRecords": "Không tìm thấy kết quả",
+                "search": "Tìm kiếm",
+                "paginate": {
+                    'first': '<i class="fa fa-angle-double-left"></i>',
+                    'previous': '<i class="fa fa-angle-left" ></i>',
+                    'next': '<i class="fa fa-angle-right" ></i>',
+                    'last': '<i class="fa fa-angle-double-right"></i>'
+                },
+            },
+            ajax: {
+                url: "{{ route('spin') }}",
+                data: function(d) {
+                    var start = '';
+                    var end = '';
+                    if ($('#date').val()) {
+                        start = $('#date')
+                            .data('daterangepicker')
+                            .startDate.format('YYYY-MM-DD');
+                        end = $('#date')
+                            .data('daterangepicker')
+                            .endDate.format('YYYY-MM-DD');
                     }
-                    x = x + 1;
-                }, 1);
+                    d.start_date = start;
+                    d.end_date = end;
+                }
+            },
+            order: [],
+            "columns":[
+                {"data": "reward" },
+                {"data": "created_at", class: 'text-center' },
+            ]
+        });
+
+        // Configure CSRF token for AJAX requests
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
-    }
-</script>
+
+        // Clean up on page unload
+        $(window).on('beforeunload', function() {
+            wheel.reset();
+        });
+    });</script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
-    <a href="#" class="brand-link">
+    <a href="{{ route('spin') }}" class="brand-link">
         <center> <img width="100%" height="70px" src="{{ asset('AdminLTE-3.1.0/dist/img/AdminLTELogo.png') }}" ></center>
     </a>
     <!-- Sidebar Menu -->
